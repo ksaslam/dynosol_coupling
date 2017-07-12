@@ -1,0 +1,28 @@
+!SESSION 2017-07-08 21:51:48.850 -----------------------------------------------
+eclipse.buildId=4.6.3.M20170301-0400
+java.version=1.8.0_73
+java.vendor=Oracle Corporation
+BootLoader constants: OS=macosx, ARCH=x86_64, WS=cocoa, NL=en_US
+Framework arguments:  -product org.eclipse.epp.package.cpp.product -keyring /Users/pawnoutlet/.eclipse_keyring
+Command-line arguments:  -os macosx -ws cocoa -arch x86_64 -product org.eclipse.epp.package.cpp.product -keyring /Users/pawnoutlet/.eclipse_keyring
+
+!ENTRY org.eclipse.core.resources 4 77 2017-07-08 21:57:00.358
+!MESSAGE Invalid project description.
+!SUBENTRY 1 unknown 0 0 2017-07-08 21:57:00.358
+!MESSAGE OK
+!SUBENTRY 1 org.eclipse.core.resources 4 77 2017-07-08 21:57:00.358
+!MESSAGE /Users/pawnoutlet/Documents/project_geodynamics/dynosol overlaps the workspace location: /Users/pawnoutlet/Documents/project_geodynamics/dynosol
+
+!ENTRY org.eclipse.core.resources 4 77 2017-07-08 21:57:35.608
+!MESSAGE Invalid project description.
+!SUBENTRY 1 unknown 0 0 2017-07-08 21:57:35.608
+!MESSAGE OK
+!SUBENTRY 1 org.eclipse.core.resources 4 77 2017-07-08 21:57:35.608
+!MESSAGE /Users/pawnoutlet/Documents/project_geodynamics/dynosol overlaps the workspace location: /Users/pawnoutlet/Documents/project_geodynamics/dynosol
+
+!ENTRY org.eclipse.core.resources 4 77 2017-07-08 21:58:25.327
+!MESSAGE Invalid project description.
+!SUBENTRY 1 unknown 0 0 2017-07-08 21:58:25.327
+!MESSAGE OK
+!SUBENTRY 1 org.eclipse.core.resources 4 77 2017-07-08 21:58:25.327
+!MESSAGE /Users/pawnoutlet/Documents/project_geodynamics/dynosol overlaps the workspace location: /Users/pawnoutlet/Documents/project_geodynamics/dynosol
