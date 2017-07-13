@@ -1,14 +1,15 @@
 #include <iostream>
 #include <fstream>      
 #include <string> 
+#include <ctime>    // added by khurram
 #include "constants.hpp"
 #include "parameters.hpp"
 #include "matprops.hpp"
-
+#include "linterp.h"
 #include "ic-read-temp.hpp"
 #include "ic.hpp"
 using namespace std;    //added by khurram
-//#include "linterp.h"
+
 
 
 namespace {
@@ -106,35 +107,103 @@ void initial_stress_state(const Param &param, const Variables &var,
     //     return;
     // }
 
-    
-    // Loading the input stress as a test
     //------------------------------------------
-    // int x, y;
-    // double sxx_stress [1601][801];
+    //loading the input x and y vectors 
+    //-----------------------------------------
+    int rows= 1601;    //y grid points
+    int cols=801;
+    vector<double> x_vector(rows);
+    vector<double> y_vector(cols);
+
+    ifstream x_coord("x_vector.in");
+    if (!x_coord) 
+    {
+    cout << "Cannot open x_vector file.\n";
+    }
     
-    // ifstream in("sxx_stress.in");
+    for (int i= 0; i < rows; i++)
+    {
+        x_coord >> x_vector[i];
+        x_vector[i]= x_vector[i] *1000.0; //changing values from km to m
+    } 
+    x_coord.close(); 
 
-    // if (!in) 
-    // {
-    // cout << "Cannot open file.\n";
-    // return;
-    // }
 
-    // for (y = 0; y < 1601; y++) 
-    // {
-    //     for (x = 0; x < 801; x++) 
-    //     {
-    //         in >> sxx_stress[x][y];
-    //     }
-    // }
 
-    // in.close();
-    // std::cout <<  var.nelem;
-    // std::cout << "\n";
-    // std::cout <<  sxx_stress[0][2];
-    // std::cout << "\n";
-
+    ifstream y_coord("y_vector.in");
+    if (!y_coord) 
+    {
+    cout << "Cannot open y_vector file.\n";
+    }
+    
+    for (int i= 0; i < cols; i++)
+    {
+        y_coord >> y_vector[i];
+        y_vector[i]= y_vector[i] *1000.0; //changing values from km to m
+    }
+    y_coord.close(); 
+    //----------------------------------------------
+    
+    // Loading the input stress 
     //------------------------------------------
+
+    double** stress_sxx = new double*[rows];
+    for (int i = 0; i < rows; ++i)
+        stress_sxx[i] = new double[cols];
+    
+    ifstream stress_sxx_file("sxx_stress.in");
+    if (!stress_sxx_file) 
+    {
+    cout << "Cannot open sxx_stress file.\n";
+    }
+    
+    for (int i = 0; i < rows; i++) 
+    {
+        for (int j = 0; j < cols; j++) 
+        {
+            stress_sxx_file >> stress_sxx[i][j];    
+        }
+    }
+    stress_sxx_file.close();
+    //--------------------------------------------------
+    // Interpolation part 
+    //--------------------------------------------------
+
+    // note that we will pass in a sequence of iterators pointing to the beginning of each grid
+    std::vector< std::vector<double>::iterator > grid_iter_list;
+    grid_iter_list.push_back(x_vector.begin());
+    grid_iter_list.push_back(y_vector.begin());
+    // the size of the grid in each dimension
+    array<int,2> grid_sizes;
+    grid_sizes[0] = rows;
+    grid_sizes[1] = cols;
+  
+  // total number of elements
+    int num_elements = grid_sizes[0] * grid_sizes[1];
+    
+
+  
+  // fill in the values of f(x) at the gridpoints. 
+  // we will pass in a contiguous sequence, values are assumed to be laid out C-style
+   std::vector<double> f_values(num_elements);
+
+    for (int i=0; i<grid_sizes[0]; i++) {
+         for (int j=0; j<grid_sizes[1]; j++) {
+            f_values[i*grid_sizes[1] + j] = stress_sxx[i][j];
+        }
+    }
+
+
+
+
+    // construct the interpolator. the last two arguments are pointers to the underlying data
+    
+    InterpMultilinear<2, double> interp_ML(grid_iter_list.begin(), grid_sizes.begin(), f_values.data(), f_values.data() + num_elements);
+    
+    // interpolate one value
+    
+    array<double,2> args = {45000.0, 22000.0};
+    printf("%f, %f -> %f\n", args[0], args[1], interp_ML.interp(args.begin()));
 
 
     
