@@ -118,7 +118,8 @@ void initial_stress_state(const Param &param, const Variables &var,
     ifstream x_coord("x_vector.in");
     if (!x_coord) 
     {
-    cout << "Cannot open x_vector file.\n";
+        cout << "Cannot open x_vector file.\n";
+        abort();
     }
     
     for (int i= 0; i < rows; i++)
@@ -133,7 +134,8 @@ void initial_stress_state(const Param &param, const Variables &var,
     ifstream y_coord("y_vector.in");
     if (!y_coord) 
     {
-    cout << "Cannot open y_vector file.\n";
+        cout << "Cannot open y_vector file.\n";
+        abort();
     }
     
     for (int i= 0; i < cols; i++)
@@ -147,14 +149,24 @@ void initial_stress_state(const Param &param, const Variables &var,
     // Loading the input stress 
     //------------------------------------------
 
+    // initialize stresses
     double** stress_sxx = new double*[rows];
+    double** stress_sxy = new double*[rows];
+    double** stress_syy = new double*[rows];
     for (int i = 0; i < rows; ++i)
+    {
         stress_sxx[i] = new double[cols];
+        stress_sxy[i] = new double[cols];
+        stress_syy[i] = new double[cols];
+    }
+
     
+    // loading sxx stress component
     ifstream stress_sxx_file("sxx_stress.in");
     if (!stress_sxx_file) 
     {
-    cout << "Cannot open sxx_stress file.\n";
+        cout << "Cannot open sxx_stress file.\n";
+        abort();
     }
     
     for (int i = 0; i < rows; i++) 
@@ -165,6 +177,42 @@ void initial_stress_state(const Param &param, const Variables &var,
         }
     }
     stress_sxx_file.close();
+
+        // loading sxy stress component
+    ifstream stress_sxy_file("sxy_stress.in");
+    if (!stress_sxy_file) 
+    {
+        cout << "Cannot open sxy_stress file.\n";
+        abort();
+    }
+    
+    for (int i = 0; i < rows; i++) 
+    {
+        for (int j = 0; j < cols; j++) 
+        {
+            stress_sxy_file >> stress_sxy[i][j];    
+        }
+    }
+    stress_sxy_file.close();
+
+        // loading syy stress component
+    ifstream stress_syy_file("syy_stress.in");
+    if (!stress_syy_file) 
+    {
+        cout << "Cannot open syy_stress file.\n";
+        abort();
+    }
+    
+    for (int i = 0; i < rows; i++) 
+    {
+        for (int j = 0; j < cols; j++) 
+        {
+            stress_syy_file >> stress_syy[i][j];    
+        }
+    }
+    stress_syy_file.close();
+
+
     //--------------------------------------------------
     // Interpolation part 
     //--------------------------------------------------
@@ -185,11 +233,15 @@ void initial_stress_state(const Param &param, const Variables &var,
   
   // fill in the values of f(x) at the gridpoints. 
   // we will pass in a contiguous sequence, values are assumed to be laid out C-style
-   std::vector<double> f_values(num_elements);
+   //std::vector<double> f_values_sxx(num_elements);
+   //std::vector<double> f_values_sxy(num_elements);
+   std::vector<double> f_values_syy(num_elements);
 
     for (int i=0; i<grid_sizes[0]; i++) {
          for (int j=0; j<grid_sizes[1]; j++) {
-            f_values[i*grid_sizes[1] + j] = stress_sxx[i][j];
+    //        f_values_sxx[i*grid_sizes[1] + j] = stress_sxx[i][j];
+    //        f_values_sxy[i*grid_sizes[1] + j] = stress_sxy[i][j];
+            f_values_syy[i*grid_sizes[1] + j] = stress_syy[i][j];
         }
     }
 
@@ -198,12 +250,16 @@ void initial_stress_state(const Param &param, const Variables &var,
 
     // construct the interpolator. the last two arguments are pointers to the underlying data
     
-    InterpMultilinear<2, double> interp_ML(grid_iter_list.begin(), grid_sizes.begin(), f_values.data(), f_values.data() + num_elements);
+    //InterpMultilinear<2, double> interp_ML_sxx(grid_iter_list.begin(), grid_sizes.begin(), f_values_sxx.data(), f_values_sxx.data() + num_elements);
+    //InterpMultilinear<2, double> interp_ML_sxy(grid_iter_list.begin(), grid_sizes.begin(), f_values_sxy.data(), f_values_sxy.data() + num_elements);
+    InterpMultilinear<2, double> interp_ML_syy(grid_iter_list.begin(), grid_sizes.begin(), f_values_syy.data(), f_values_syy.data() + num_elements);
     
     // interpolate one value
     
     array<double,2> args = {45000.0, 22000.0};
-    printf("%f, %f -> %f\n", args[0], args[1], interp_ML.interp(args.begin()));
+    //printf("%f, %f stressxx-> %f\n", args[0], args[1], interp_ML_sxx.interp(args.begin()));
+    //printf("%f, %f stressxy-> %f\n", args[0], args[1], interp_ML_sxy.interp(args.begin()));
+    printf("%f, %f stressyy-> %f\n", args[0], args[1], interp_ML_syy.interp(args.begin()));
 
 
     
@@ -225,6 +281,13 @@ void initial_stress_state(const Param &param, const Variables &var,
         }
         zcenter /= NODES_PER_ELEM;
         xcenter /= NODES_PER_ELEM;
+        array<double,2> args = {xcenter, zcenter};
+        stressyy[e]= interp_ML_syy.interp(args.begin());    // have to change it to stresszz
+        //stressxz[e]= interp_ML_sxy.interp(args.begin()); 
+        //stressxx[e]= interp_ML_sxx.interp(args.begin());
+        printf("%f, this is the stress syy in element, stressxx\n", stressyy[e]);
+        
+
         //stressxx_in_element = find_stress(stress_xx,xcenter,zcenter)
         //stressxy_in_element = find_stress(stress_xy,xcenter,zcenter)
         //...... for all 6 components
@@ -237,15 +300,27 @@ void initial_stress_state(const Param &param, const Variables &var,
             ks = var.mat->bulkm(e);
         }
 
-        for (int i=0; i<NDIMS; ++i) {
-            stress[e][i] = -p;
-            strain[e][i] = -p / ks / NDIMS;
-        }
-        if (param.mat.is_plane_strain)
-            stressyy[e] = -p;
+    //     for (int i=0; i<NDIMS; ++i) {
+    //         stress[e][i] = -p;
+    //         strain[e][i] = -p / ks / NDIMS;
+    //     }
+    //     if (param.mat.is_plane_strain)
+    //         stressyy[e] = -p;
     }
 
     compensation_pressure = ref_pressure(param, -param.mesh.zlength);
+
+    // freeing the matrices allocated at the top of the function
+    for (int i = 0; i < rows; ++i)
+    {
+        delete [] stress_sxx[i];
+        delete [] stress_sxy[i];
+        delete [] stress_syy[i];
+    }    
+    delete [] stress_sxx;
+    delete [] stress_sxy;
+    delete [] stress_syy;
+
 }
 
 
