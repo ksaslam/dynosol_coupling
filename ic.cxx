@@ -98,14 +98,20 @@ namespace {
 } // anonymous namespace
 
 
+// void initial_stress_state(const Param &param, const Variables &var,
+//                           tensor_t &stress, double_vec &stressyy, tensor_t &strain,
+//                           double &compensation_pressure)
 void initial_stress_state(const Param &param, const Variables &var,
                           tensor_t &stress, double_vec &stressyy, tensor_t &strain,
-                          double &compensation_pressure)
+                          double &compensation_pressure, double_vec &stressxx, double_vec &stressxz, double_vec &stresszz)
+
 {
     // if (param.control.gravity == 0) {
     //     compensation_pressure = 0;
     //     return;
     // }
+
+
 
     //------------------------------------------
     //loading the input x and y vectors 
@@ -173,7 +179,8 @@ void initial_stress_state(const Param &param, const Variables &var,
     {
         for (int j = 0; j < cols; j++) 
         {
-            stress_sxx_file >> stress_sxx[i][j];    
+            stress_sxx_file >> stress_sxx[i][j];
+            stress_sxx[i][j]= stress_sxx[i][j] * 1000000.0 ; // convert it into pascal    
         }
     }
     stress_sxx_file.close();
@@ -190,7 +197,8 @@ void initial_stress_state(const Param &param, const Variables &var,
     {
         for (int j = 0; j < cols; j++) 
         {
-            stress_sxy_file >> stress_sxy[i][j];    
+            stress_sxy_file >> stress_sxy[i][j];
+            stress_sxy[i][j]= stress_sxy[i][j] * 1000000.0;     
         }
     }
     stress_sxy_file.close();
@@ -207,7 +215,8 @@ void initial_stress_state(const Param &param, const Variables &var,
     {
         for (int j = 0; j < cols; j++) 
         {
-            stress_syy_file >> stress_syy[i][j];    
+            stress_syy_file >> stress_syy[i][j];
+            stress_syy[i][j] = stress_syy[i][j] * 1000000.0 ;    
         }
     }
     stress_syy_file.close();
@@ -233,14 +242,14 @@ void initial_stress_state(const Param &param, const Variables &var,
   
   // fill in the values of f(x) at the gridpoints. 
   // we will pass in a contiguous sequence, values are assumed to be laid out C-style
-   //std::vector<double> f_values_sxx(num_elements);
-   //std::vector<double> f_values_sxy(num_elements);
+   std::vector<double> f_values_sxx(num_elements);
+   std::vector<double> f_values_sxy(num_elements);
    std::vector<double> f_values_syy(num_elements);
 
     for (int i=0; i<grid_sizes[0]; i++) {
          for (int j=0; j<grid_sizes[1]; j++) {
-    //        f_values_sxx[i*grid_sizes[1] + j] = stress_sxx[i][j];
-    //        f_values_sxy[i*grid_sizes[1] + j] = stress_sxy[i][j];
+            f_values_sxx[i*grid_sizes[1] + j] = stress_sxx[i][j];
+            f_values_sxy[i*grid_sizes[1] + j] = stress_sxy[i][j];
             f_values_syy[i*grid_sizes[1] + j] = stress_syy[i][j];
         }
     }
@@ -250,25 +259,24 @@ void initial_stress_state(const Param &param, const Variables &var,
 
     // construct the interpolator. the last two arguments are pointers to the underlying data
     
-    //InterpMultilinear<2, double> interp_ML_sxx(grid_iter_list.begin(), grid_sizes.begin(), f_values_sxx.data(), f_values_sxx.data() + num_elements);
-    //InterpMultilinear<2, double> interp_ML_sxy(grid_iter_list.begin(), grid_sizes.begin(), f_values_sxy.data(), f_values_sxy.data() + num_elements);
+    InterpMultilinear<2, double> interp_ML_sxx(grid_iter_list.begin(), grid_sizes.begin(), f_values_sxx.data(), f_values_sxx.data() + num_elements);
+    InterpMultilinear<2, double> interp_ML_sxy(grid_iter_list.begin(), grid_sizes.begin(), f_values_sxy.data(), f_values_sxy.data() + num_elements);
     InterpMultilinear<2, double> interp_ML_syy(grid_iter_list.begin(), grid_sizes.begin(), f_values_syy.data(), f_values_syy.data() + num_elements);
     
     // interpolate one value
     
     array<double,2> args = {45000.0, 22000.0};
-    //printf("%f, %f stressxx-> %f\n", args[0], args[1], interp_ML_sxx.interp(args.begin()));
-    //printf("%f, %f stressxy-> %f\n", args[0], args[1], interp_ML_sxy.interp(args.begin()));
     printf("%f, %f stressyy-> %f\n", args[0], args[1], interp_ML_syy.interp(args.begin()));
 
-
-    
-    //InterpMultilinear<2, double> interp_ML(grid_iter_list.begin(), grid_sizes.begin(), f_values.data(), f_values.data() + num_elements);
 
 
     // lithostatic condition for stress and strain
     double rho = var.mat->rho(0);
     double ks = var.mat->bulkm(0);
+
+    // --------------------------------------------------------------------
+    // Assign the values of stresses to the berycenter in each element
+    // --------------------------------------------------------------------
 
     for (int e=0; e<var.nelem; ++e) {
         const int *conn = (*var.connectivity)[e];
@@ -282,16 +290,9 @@ void initial_stress_state(const Param &param, const Variables &var,
         zcenter /= NODES_PER_ELEM;
         xcenter /= NODES_PER_ELEM;
         array<double,2> args = {xcenter, zcenter};
-        stressyy[e]= interp_ML_syy.interp(args.begin());    // have to change it to stresszz
-        //stressxz[e]= interp_ML_sxy.interp(args.begin()); 
-        //stressxx[e]= interp_ML_sxx.interp(args.begin());
-        printf("%f, this is the stress syy in element, stressxx\n", stressyy[e]);
-        
-
-        //stressxx_in_element = find_stress(stress_xx,xcenter,zcenter)
-        //stressxy_in_element = find_stress(stress_xy,xcenter,zcenter)
-        //...... for all 6 components
-        //  stressxx[e] = stressxx_in_element        //added by khurram
+        stresszz[e]= interp_ML_syy.interp(args.begin());   
+        stressxz[e]= interp_ML_sxy.interp(args.begin()); 
+        stressxx[e]= interp_ML_sxx.interp(args.begin());
 
 
         double p = ref_pressure(param, zcenter);

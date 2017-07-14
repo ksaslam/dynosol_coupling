@@ -251,7 +251,11 @@ struct Variables {
     double_vec *mass, *tmass;
     double_vec *edvoldt;
     double_vec *temperature, *plstrain, *delta_plstrain;
+    double_vec *stresszz;
+    double_vec *stressxz;
+    double_vec *stressxx;
     double_vec *stressyy;
+
     double_vec *ntmp;
 
     array_t *vel, *force, *coord0;
