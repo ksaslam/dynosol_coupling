@@ -93,8 +93,8 @@ void init(const Param& param, Variables& var)
     apply_vbcs(param, var, *var.vel);
     // temperature should be init'd before stress and strain
     initial_temperature(param, var, *var.temperature);
-    //initial_stress_state(param, var, *var.stress, *var.stressyy, *var.strain, var.compensation_pressure );
-    initial_stress_state(param, var, *var.stress, *var.stressyy, *var.strain, var.compensation_pressure, *var.stressxx, *var.stressxz, *var.stresszz);
+    initial_stress_state(param, var, *var.stress, *var.stressyy, *var.strain, var.compensation_pressure );
+    // initial_stress_state(param, var, *var.stress, *var.stressyy, *var.strain, var.compensation_pressure, *var.stressxx, *var.stressxz, *var.stresszz);
 
     initial_weak_zone(param, var, *var.plstrain);
 

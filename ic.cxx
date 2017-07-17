@@ -98,12 +98,12 @@ namespace {
 } // anonymous namespace
 
 
-// void initial_stress_state(const Param &param, const Variables &var,
-//                           tensor_t &stress, double_vec &stressyy, tensor_t &strain,
-//                           double &compensation_pressure)
 void initial_stress_state(const Param &param, const Variables &var,
                           tensor_t &stress, double_vec &stressyy, tensor_t &strain,
-                          double &compensation_pressure, double_vec &stressxx, double_vec &stressxz, double_vec &stresszz)
+                          double &compensation_pressure)
+// void initial_stress_state(const Param &param, const Variables &var,
+//                           tensor_t &stress, double_vec &stressyy, tensor_t &strain,
+//                           double &compensation_pressure, double_vec &stressxx, double_vec &stressxz, double_vec &stresszz)
 
 {
     // if (param.control.gravity == 0) {
@@ -290,9 +290,9 @@ void initial_stress_state(const Param &param, const Variables &var,
         zcenter /= NODES_PER_ELEM;
         xcenter /= NODES_PER_ELEM;
         array<double,2> args = {xcenter, zcenter};
-        stresszz[e]= interp_ML_syy.interp(args.begin());   
-        stressxz[e]= interp_ML_sxy.interp(args.begin()); 
-        stressxx[e]= interp_ML_sxx.interp(args.begin());
+        //stressyy[e]= interp_ML_syy.interp(args.begin());   //need to change it to stresszz
+        // stressxz[e]= interp_ML_sxy.interp(args.begin()); 
+        // stressxx[e]= interp_ML_sxx.interp(args.begin());
 
 
         double p = ref_pressure(param, zcenter);
@@ -301,15 +301,21 @@ void initial_stress_state(const Param &param, const Variables &var,
             ks = var.mat->bulkm(e);
         }
 
-    //     for (int i=0; i<NDIMS; ++i) {
-    //         stress[e][i] = -p;
-    //         strain[e][i] = -p / ks / NDIMS;
-    //     }
+        stress[e][0] = interp_ML_sxx.interp(args.begin());
+        stress[e][1] = interp_ML_syy.interp(args.begin());
+        stress[e][2] = interp_ML_sxy.interp(args.begin());
+        
+        for (int i=0; i<NDIMS; ++i) {
+            //stress[e][i] = -p;  // in 2D. i=0 means 'xx'; i=1 means 'zz'; i=2 (==NDIMS) means 'xz'. 
+            
+
+            strain[e][i] = -p / ks / NDIMS;
+        }
     //     if (param.mat.is_plane_strain)
     //         stressyy[e] = -p;
     }
 
-    compensation_pressure = ref_pressure(param, -param.mesh.zlength);
+    //compensation_pressure = ref_pressure(param, -param.mesh.zlength);
 
     // freeing the matrices allocated at the top of the function
     for (int i = 0; i < rows; ++i)
