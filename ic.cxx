@@ -180,7 +180,7 @@ void initial_stress_state(const Param &param, const Variables &var,
         for (int j = 0; j < cols; j++) 
         {
             stress_sxx_file >> stress_sxx[i][j];
-            stress_sxx[i][j]= stress_sxx[i][j] * 1000000.0 ; // convert it into pascal    
+            stress_sxx[i][j]= stress_sxx[i][j] * 1000000  ; // convert it into pascal    
         }
     }
     stress_sxx_file.close();
@@ -198,7 +198,7 @@ void initial_stress_state(const Param &param, const Variables &var,
         for (int j = 0; j < cols; j++) 
         {
             stress_sxy_file >> stress_sxy[i][j];
-            stress_sxy[i][j]= stress_sxy[i][j] * 1000000.0;     
+            stress_sxy[i][j]= stress_sxy[i][j] * 1000000 ;     
         }
     }
     stress_sxy_file.close();
@@ -216,7 +216,7 @@ void initial_stress_state(const Param &param, const Variables &var,
         for (int j = 0; j < cols; j++) 
         {
             stress_syy_file >> stress_syy[i][j];
-            stress_syy[i][j] = stress_syy[i][j] * 1000000.0 ;    
+            stress_syy[i][j] = stress_syy[i][j] * 1000000 ;    
         }
     }
     stress_syy_file.close();
@@ -429,4 +429,154 @@ void initial_temperature(const Param &param, const Variables &var,
     }
 }
 
+
+void initial_velocity(const Param &param, const Variables &var , array_t& vel)
+{
+    
+    int rows= 1601;    //y grid points
+    int cols=801;
+    
+    vector<double> x_vector(rows);
+    vector<double> y_vector(cols);
+    // double *v[var.nnode *2];
+
+    ifstream x_coord("x_vector.in");
+    if (!x_coord) 
+    {
+        cout << "Cannot open x_vector file.\n";
+        abort();
+    }
+    
+    for (int i= 0; i < rows; i++)
+    {
+        x_coord >> x_vector[i];
+        x_vector[i]= x_vector[i] *1000.0; //changing values from km to m
+    } 
+    x_coord.close(); 
+
+
+
+    ifstream y_coord("y_vector.in");
+    if (!y_coord) 
+    {
+        cout << "Cannot open y_vector file.\n";
+        abort();
+    }
+    
+    for (int i= 0; i < cols; i++)
+    {
+        y_coord >> y_vector[i];
+        y_vector[i]= y_vector[i] *1000.0; //changing values from km to m
+    }
+    y_coord.close(); 
+    //----------------------------------------------
+
+    double** velocity_x_input = new double*[rows];
+    for (int i = 0; i < rows; ++i)
+    {
+        velocity_x_input[i] = new double[cols];
+    }
+    
+
+    ifstream velocity_x_file("velocity_x.in");
+    if (!velocity_x_file) 
+    {
+        cout << "Cannot open velocity_x file .\n";
+        abort();
+    }
+    
+    for (int i = 0; i < rows; i++) 
+    {
+        for (int j = 0; j < cols; j++) 
+        {
+            velocity_x_file >> velocity_x_input[i][j];
+               
+        }
+    }  
+
+    double** velocity_y_input = new double*[rows];
+    for (int i = 0; i < rows; ++i)
+    {
+        velocity_y_input[i] = new double[cols];
+    }
+    
+
+    ifstream velocity_y_file("velocity_y.in");
+    if (!velocity_y_file) 
+    {
+        cout << "Cannot open velocity_y file .\n";
+        abort();
+    }
+    
+    for (int i = 0; i < rows; i++) 
+    {
+        for (int j = 0; j < cols; j++) 
+        {
+            velocity_y_file >> velocity_y_input[i][j];
+               
+        }
+    }    
+    //---------------------------------------------------
+
+
+    // note that we will pass in a sequence of iterators pointing to the beginning of each grid
+    std::vector< std::vector<double>::iterator > grid_iter_list;
+    grid_iter_list.push_back(x_vector.begin());
+    grid_iter_list.push_back(y_vector.begin());
+    // the size of the grid in each dimension
+    array<int,2> grid_sizes;
+    grid_sizes[0] = rows;
+    grid_sizes[1] = cols;
+  
+  // total number of elements
+    int num_elements = grid_sizes[0] * grid_sizes[1];
+    
+
+  
+  // fill in the values of f(x) at the gridpoints. 
+  // we will pass in a contiguous sequence, values are assumed to be laid out C-style
+    std::vector<double> f_values_vx(num_elements);
+    std::vector<double> f_values_vy(num_elements);
+
+
+    for (int i=0; i<grid_sizes[0]; i++) {
+         for (int j=0; j<grid_sizes[1]; j++) {
+            f_values_vx[i*grid_sizes[1] + j] = velocity_x_input[i][j]; 
+            f_values_vy[i*grid_sizes[1] + j] = velocity_y_input[i][j];
+         }       
+    }
+    
+    InterpMultilinear<2, double> interp_ML_vx(grid_iter_list.begin(), grid_sizes.begin(), f_values_vx.data(), f_values_vx.data() + num_elements);
+    InterpMultilinear<2, double> interp_ML_vy(grid_iter_list.begin(), grid_sizes.begin(), f_values_vy.data(), f_values_vy.data() + num_elements);
+
+    
+    int odd_index, even_index;
+    double* v = vel.data();
+    for (int i=0; i<var.nnode; ++i) 
+    {
+        double z_coord = 0;
+        double x_coord = 0; 
+        z_coord = (*var.coord)[i][NDIMS-1];
+        x_coord = (*var.coord)[i][0]; 
+        odd_index = 2*i + 1; 
+        even_index= 2*i;
+        array<double,2> args = {x_coord, z_coord};
+        double vx= interp_ML_vx.interp(args.begin());
+        double vy= interp_ML_vy.interp(args.begin());
+        v[even_index] = vx;
+        v[odd_index] = vy;
+
+
+    }    
+            // for (int i=0; i<var.nnode; ++i) 
+            // {
+            //     double w = -(*var.coord)[i][NDIMS-1] / std::sqrt(4 * diffusivity * age);
+            //     temperature[i] = param.bc.surface_temperature +
+            //         (param.bc.mantle_temperature - param.bc.surface_temperature) * std::erf(w);
+            // }
+            // break;
+    
+        
+    
+}
 

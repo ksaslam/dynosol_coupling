@@ -255,6 +255,8 @@ struct Variables {
     // double_vec *stressxz;
     // double_vec *stressxx;
     double_vec *stressyy;
+    double_vec *velocity_x;
+
 
     double_vec *ntmp;
 

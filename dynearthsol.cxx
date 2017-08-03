@@ -1,5 +1,5 @@
 #include <iostream>
-
+#include <fstream>
 #ifdef USE_OMP
 #include <omp.h>
 #endif
@@ -90,6 +90,10 @@ void init(const Param& param, Variables& var)
                      *var.shpdx, *var.shpdy, *var.shpdz);
 
     create_boundary_normals(var, var.bnormals, var.edge_vectors);
+    
+    //adding a new function to load the velocities from the input as initial condition by "khurram"
+    initial_velocity(param, var, *var.vel);
+
     apply_vbcs(param, var, *var.vel);
     // temperature should be init'd before stress and strain
     initial_temperature(param, var, *var.temperature);

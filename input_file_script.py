@@ -5,7 +5,7 @@ x_rough= np.loadtxt("x.out")
 y_rough= np.loadtxt("y.out")
 len_arrays= 2*len(x_rough) + 4   #(4 corners + 4 points on the edge of the fault zone )
 height_of_domain= 40     #(km)
-
+height_pert = 5.0
 
  # working on the node part of dynosol 2d
 
@@ -31,13 +31,13 @@ x[3+ 2* (len(x_rough)-2) +4] =  x_rough[len(x_rough)-1]    							# lower right 
 y[0]= height_of_domain               										# top left corner
 y[1]= height_of_domain														# top right corner
 
-y[2]= 1.0 + y_rough[0] 														# upper center left corner
-y[3:3+len(x_rough)-2]= 1.0 + y_rough[1: (len(x_rough)-1 )]  				 		# upper level of body of rough fault
-y[3+len(x_rough)-2]=  1.0 + y_rough[len(x_rough)-1]								# upper center right corner	
+y[2]= height_pert + y_rough[0] 														# upper center left corner
+y[3:3+len(x_rough)-2]= height_pert + y_rough[1: (len(x_rough)-1 )]  				 		# upper level of body of rough fault
+y[3+len(x_rough)-2]=  height_pert + y_rough[len(x_rough)-1]								# upper center right corner	
 
-y[3+len(x_rough)-2+ 1]=	y_rough[0] -1.0  													# lower center left corner
-y[3+len(x_rough)-2+ 2 : 3+ 2* (len(x_rough)-2) +2 ]=  y_rough[1:len(x_rough)-1] -1.0  					# lower level of body of rough fault
-y[3+ 2* (len(x_rough)-2) +2] =  y_rough[len(x_rough)-1] -1.0    									# lower center right corner
+y[3+len(x_rough)-2+ 1]=	y_rough[0] - height_pert 													# lower center left corner
+y[3+len(x_rough)-2+ 2 : 3+ 2* (len(x_rough)-2) +2 ]=  y_rough[1:len(x_rough)-1] -height_pert 					# lower level of body of rough fault
+y[3+ 2* (len(x_rough)-2) +2] =  y_rough[len(x_rough)-1] - height_pert    									# lower center right corner
 
 y[3+ 2* (len(x_rough)-2) +3] =  0.0    															 # lower left corner
 y[3+ 2* (len(x_rough)-2) +4] =  0.0     															# lower right corner
