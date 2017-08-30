@@ -16,6 +16,8 @@ void initial_weak_zone(const Param &param, const Variables &var,
 void initial_temperature(const Param &param, const Variables &var,
                          double_vec &temperature);
 void initial_velocity(const Param &param, const Variables &var, array_t& vel );
+void initial_plastic_strain(const Param &param, const Variables &var,
+                       double_vec &plstrain);
 
 
 #endif

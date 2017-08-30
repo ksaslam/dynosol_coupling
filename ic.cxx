@@ -152,18 +152,28 @@ void initial_stress_state(const Param &param, const Variables &var,
     y_coord.close(); 
     //----------------------------------------------
     
-    // Loading the input stress 
+    // Loading the input stress tensor and total strain tensor
     //------------------------------------------
 
     // initialize stresses
     double** stress_sxx = new double*[rows];
     double** stress_sxy = new double*[rows];
     double** stress_syy = new double*[rows];
+
+    // initialize total strain tensor
+    double** strainf_xx = new double*[rows];
+    double** strainf_xy = new double*[rows];
+    double** strainf_yy = new double*[rows];
+
     for (int i = 0; i < rows; ++i)
     {
         stress_sxx[i] = new double[cols];
         stress_sxy[i] = new double[cols];
         stress_syy[i] = new double[cols];
+
+        strainf_xx[i] = new double[cols];
+        strainf_xy[i] = new double[cols];
+        strainf_yy[i] = new double[cols];
     }
 
     
@@ -222,6 +232,61 @@ void initial_stress_state(const Param &param, const Variables &var,
     stress_syy_file.close();
 
 
+
+    // loading full strain epxx strain component
+    ifstream strain_epxx_file("totalxx_strain.in");
+    if (!strain_epxx_file) 
+    {
+        cout << "Cannot open epxx_strain file.\n";
+        abort();
+    }
+    
+    for (int i = 0; i < rows; i++) 
+    {
+        for (int j = 0; j < cols; j++) 
+        {
+            strain_epxx_file >> strainf_xx[i][j];
+              
+        }
+    }
+    strain_epxx_file.close();
+
+    // loading full strain epxy strain component
+    ifstream strain_epxy_file("totalxy_strain.in");
+    if (!strain_epxy_file) 
+    {
+        cout << "Cannot open epxy_strain file.\n";
+        abort();
+    }
+    
+    for (int i = 0; i < rows; i++) 
+    {
+        for (int j = 0; j < cols; j++) 
+        {
+            strain_epxy_file >> strainf_xy[i][j];
+              
+        }
+    }
+    strain_epxy_file.close();
+
+    // loading full strain epyy stress component
+    ifstream strain_epyy_file("totalyy_strain.in");
+    if (!strain_epyy_file) 
+    {
+        cout << "Cannot open epyy_strain file.\n";
+        abort();
+    }
+    
+    for (int i = 0; i < rows; i++) 
+    {
+        for (int j = 0; j < cols; j++) 
+        {
+            strain_epyy_file >> strainf_xx[i][j];
+              
+        }
+    }
+    strain_epyy_file.close();        
+
     //--------------------------------------------------
     // Interpolation part 
     //--------------------------------------------------
@@ -246,11 +311,22 @@ void initial_stress_state(const Param &param, const Variables &var,
    std::vector<double> f_values_sxy(num_elements);
    std::vector<double> f_values_syy(num_elements);
 
+   std::vector<double> f_values_epxx(num_elements);
+   std::vector<double> f_values_epxy(num_elements);
+   std::vector<double> f_values_epyy(num_elements);      
+
+
     for (int i=0; i<grid_sizes[0]; i++) {
          for (int j=0; j<grid_sizes[1]; j++) {
             f_values_sxx[i*grid_sizes[1] + j] = stress_sxx[i][j];
             f_values_sxy[i*grid_sizes[1] + j] = stress_sxy[i][j];
             f_values_syy[i*grid_sizes[1] + j] = stress_syy[i][j];
+
+            f_values_epxx[i*grid_sizes[1] + j] = strainf_xx[i][j];
+            f_values_epxy[i*grid_sizes[1] + j] = strainf_xy[i][j];
+            f_values_epyy[i*grid_sizes[1] + j] = strainf_yy[i][j];
+
+
         }
     }
 
@@ -262,6 +338,10 @@ void initial_stress_state(const Param &param, const Variables &var,
     InterpMultilinear<2, double> interp_ML_sxx(grid_iter_list.begin(), grid_sizes.begin(), f_values_sxx.data(), f_values_sxx.data() + num_elements);
     InterpMultilinear<2, double> interp_ML_sxy(grid_iter_list.begin(), grid_sizes.begin(), f_values_sxy.data(), f_values_sxy.data() + num_elements);
     InterpMultilinear<2, double> interp_ML_syy(grid_iter_list.begin(), grid_sizes.begin(), f_values_syy.data(), f_values_syy.data() + num_elements);
+
+    InterpMultilinear<2, double> interp_ML_epxx(grid_iter_list.begin(), grid_sizes.begin(), f_values_epxx.data(), f_values_epxx.data() + num_elements);
+    InterpMultilinear<2, double> interp_ML_epxy(grid_iter_list.begin(), grid_sizes.begin(), f_values_epxy.data(), f_values_epxy.data() + num_elements);
+    InterpMultilinear<2, double> interp_ML_epyy(grid_iter_list.begin(), grid_sizes.begin(), f_values_epyy.data(), f_values_epyy.data() + num_elements);
     
     // interpolate one value
     
@@ -305,12 +385,16 @@ void initial_stress_state(const Param &param, const Variables &var,
         stress[e][1] = interp_ML_syy.interp(args.begin());
         stress[e][2] = interp_ML_sxy.interp(args.begin());
         
-        for (int i=0; i<NDIMS; ++i) {
+        strain[e][0] = interp_ML_epxx.interp(args.begin());
+        strain[e][1] = interp_ML_epyy.interp(args.begin());
+        strain[e][2] = interp_ML_epxy.interp(args.begin());
+
+        //for (int i=0; i<NDIMS; ++i) {
             //stress[e][i] = -p;  // in 2D. i=0 means 'xx'; i=1 means 'zz'; i=2 (==NDIMS) means 'xz'. 
             
 
-            strain[e][i] = -p / ks / NDIMS;
-        }
+        //    strain[e][i] = -p / ks / NDIMS;
+       // }
     //     if (param.mat.is_plane_strain)
     //         stressyy[e] = -p;
     }
@@ -323,10 +407,18 @@ void initial_stress_state(const Param &param, const Variables &var,
         delete [] stress_sxx[i];
         delete [] stress_sxy[i];
         delete [] stress_syy[i];
+
+        delete [] strainf_xx[i];
+        delete [] strainf_xy[i];
+        delete [] strainf_yy[i];
     }    
     delete [] stress_sxx;
     delete [] stress_sxy;
     delete [] stress_syy;
+
+    delete [] strainf_xx;
+    delete [] strainf_xy;
+    delete [] strainf_yy;
 
 }
 
@@ -580,3 +672,131 @@ void initial_velocity(const Param &param, const Variables &var , array_t& vel)
     
 }
 
+
+void initial_plastic_strain(const Param &param, const Variables &var,
+                       double_vec &plstrain)
+{
+
+    
+
+    int rows= 1601;    //y grid points
+    int cols=801;
+    
+    vector<double> x_vector(rows);
+    vector<double> y_vector(cols);
+    // double *v[var.nnode *2];
+
+    ifstream x_coord("x_vector.in");
+    if (!x_coord) 
+    {
+        cout << "Cannot open x_vector file.\n";
+        abort();
+    }
+    
+    for (int i= 0; i < rows; i++)
+    {
+        x_coord >> x_vector[i];
+        x_vector[i]= x_vector[i] *1000.0; //changing values from km to m
+    } 
+    x_coord.close(); 
+
+
+
+    ifstream y_coord("y_vector.in");
+    if (!y_coord) 
+    {
+        cout << "Cannot open y_vector file.\n";
+        abort();
+    }
+    
+    for (int i= 0; i < cols; i++)
+    {
+        y_coord >> y_vector[i];
+        y_vector[i]= y_vector[i] *1000.0; //changing values from km to m
+    }
+    y_coord.close(); 
+
+// --------------------------------------------------------------
+// loading the second invarient of plastic strain" file
+//---------------------------------------------------------------   
+
+    double** plast_str_input = new double*[rows];
+    for (int i = 0; i < rows; ++i)
+    {
+        plast_str_input[i] = new double[cols];
+    }
+    
+
+    ifstream plst_str_file("scalar_plasticity.in");
+    if (!plst_str_file) 
+    {
+        cout << "Cannot open scalar plasticity file .\n";
+        abort();
+    }
+
+    for (int i = 0; i < rows; i++) 
+    {
+        for (int j = 0; j < cols; j++) 
+        {
+            plst_str_file >> plast_str_input[i][j];
+               
+        }
+    }    
+    plst_str_file.close();
+//---------------------------------------------------
+// Here we are working on the interpolation part 
+//--------------------------------------------------    
+
+
+    // note that we will pass in a sequence of iterators pointing to the beginning of each grid
+    std::vector< std::vector<double>::iterator > grid_iter_list;
+    grid_iter_list.push_back(x_vector.begin());
+    grid_iter_list.push_back(y_vector.begin());
+    // the size of the grid in each dimension
+    array<int,2> grid_sizes;
+    grid_sizes[0] = rows;
+    grid_sizes[1] = cols;
+  
+  // total number of elements
+    int num_elements = grid_sizes[0] * grid_sizes[1];
+    
+  
+  // fill in the values of f(x) at the gridpoints. 
+  // we will pass in a contiguous sequence, values are assumed to be laid out C-style
+    std::vector<double> f_values_plast_str(num_elements);
+
+
+    for (int i=0; i<grid_sizes[0]; i++) {
+         for (int j=0; j<grid_sizes[1]; j++) {
+            f_values_plast_str[i*grid_sizes[1] + j] = plast_str_input[i][j]; 
+
+         }       
+    }
+    
+    InterpMultilinear<2, double> interp_ML_plst_strain(grid_iter_list.begin(), grid_sizes.begin(), f_values_plast_str.data(), f_values_plast_str.data() + num_elements);
+
+    //looping over all the elements, will find the berycenter and interpolate the plastic strains there
+    for (int e=0; e<var.nelem; ++e) {
+        const int *conn = (*var.connectivity)[e];
+        double zcenter = 0;
+        double xcenter = 0;
+
+        for (int i=0; i<NODES_PER_ELEM; ++i) {
+            zcenter += (*var.coord)[conn[i]][NDIMS-1];
+            xcenter+=  (*var.coord)[conn[i]][0];   //this line is added by khurram
+        }
+        zcenter /= NODES_PER_ELEM;
+        xcenter /= NODES_PER_ELEM;
+        array<double,2> args = {xcenter, zcenter};
+        plstrain[e] =  interp_ML_plst_strain.interp(args.begin());
+
+    }
+
+    for (int i = 0; i < rows; ++i)
+    {
+        delete [] plast_str_input[i];
+    }
+    delete [] plast_str_input;    
+   
+
+}

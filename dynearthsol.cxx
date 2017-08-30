@@ -92,7 +92,8 @@ void init(const Param& param, Variables& var)
     create_boundary_normals(var, var.bnormals, var.edge_vectors);
     
     //adding a new function to load the velocities from the input as initial condition by "khurram"
-    initial_velocity(param, var, *var.vel);
+    //initial_velocity(param, var, *var.vel);
+    initial_plastic_strain(param, var, *var.plstrain );
 
     apply_vbcs(param, var, *var.vel);
     // temperature should be init'd before stress and strain
