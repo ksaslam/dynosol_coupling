@@ -116,8 +116,10 @@ void initial_stress_state(const Param &param, const Variables &var,
     //------------------------------------------
     //loading the input x and y vectors 
     //-----------------------------------------
-    int rows= 1601;    //y grid points
-    int cols=801;
+    
+    int rows= param.mesh.fdfault_x_points;    //x grid points
+    int cols= param.mesh.fdfault_y_points;    //y grid points
+
     vector<double> x_vector(rows);
     vector<double> y_vector(cols);
 
@@ -525,8 +527,8 @@ void initial_temperature(const Param &param, const Variables &var,
 void initial_velocity(const Param &param, const Variables &var , array_t& vel)
 {
     
-    int rows= 1601;    //y grid points
-    int cols=801;
+    int rows= param.mesh.fdfault_x_points;    //x grid points
+    int cols= param.mesh.fdfault_y_points;    //y grid points
     
     vector<double> x_vector(rows);
     vector<double> y_vector(cols);
@@ -679,8 +681,8 @@ void initial_plastic_strain(const Param &param, const Variables &var,
 
     
 
-    int rows= 1601;    //y grid points
-    int cols=801;
+    int rows= param.mesh.fdfault_x_points;    //x grid points
+    int cols= param.mesh.fdfault_y_points;    //y grid points
     
     vector<double> x_vector(rows);
     vector<double> y_vector(cols);

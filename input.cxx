@@ -138,6 +138,12 @@ static void declare_parameters(po::options_description &cfg,
          "Discarding internal segments after initial mesh is created? "
          "Using it when remeshing process can modify segments (e.g. remeshing_option=11).")
 
+        //Added by khurram
+        ("mesh.fdfault_x_points", po::value<int>(&p.mesh.fdfault_x_points),
+         "Number of x points for input files")
+        ("mesh.fdfault_y_points", po::value<int>(&p.mesh.fdfault_y_points),
+         "Number of x points for input files")        
+
         ;
 
     cfg.add_options()

@@ -54,6 +54,10 @@ struct Mesh {
     int meshing_verbosity;
     int tetgen_optlevel;
     int quality_check_step_interval;
+    //added by khurram
+    int fdfault_x_points;
+    int fdfault_y_points;
+    
 
     double xlength, ylength, zlength;
     double resolution;
