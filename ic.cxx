@@ -283,7 +283,7 @@ void initial_stress_state(const Param &param, const Variables &var,
     {
         for (int j = 0; j < cols; j++) 
         {
-            strain_epyy_file >> strainf_xx[i][j];
+            strain_epyy_file >> strainf_yy[i][j];
               
         }
     }

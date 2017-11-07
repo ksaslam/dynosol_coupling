@@ -40,6 +40,7 @@ void init_var(const Param& param, Variables& var)
     // XXX: Hard coded boundary flag. If the order of ibound?? is changed
     //      in the future, the following lines have to be updated as well.
     var.vbc_types[0] = param.bc.vbc_x0;
+
     var.vbc_types[1] = param.bc.vbc_x1;
     var.vbc_types[2] = param.bc.vbc_y0;
     var.vbc_types[3] = param.bc.vbc_y1;
@@ -81,7 +82,7 @@ void init(const Param& param, Variables& var)
     for(int i=0; i<var.nnode; i++)
         for(int d=0; d<NDIMS; d++)
             (*var.coord0)[i][d] = (*var.coord)[i][d];
-
+    
     compute_volume(*var.coord, *var.connectivity, *var.volume);
     *var.volume_old = *var.volume;
     compute_mass(param, var.egroups, *var.connectivity, *var.volume, *var.mat,
@@ -92,7 +93,7 @@ void init(const Param& param, Variables& var)
     create_boundary_normals(var, var.bnormals, var.edge_vectors);
     
     //adding a new function to load the velocities from the input as initial condition by "khurram"
-    //initial_velocity(param, var, *var.vel);
+    initial_velocity(param, var, *var.vel);
     initial_plastic_strain(param, var, *var.plstrain );
 
     apply_vbcs(param, var, *var.vel);
