@@ -461,7 +461,7 @@ static void elasto_plastic2d(double bulkm, double shearm,
     p[2] -= alams * (a2 - a1 * anpsi);
 
     // 2nd invariant of plastic strain
-    depls = 0.5 * std::fabs(alams + alams * anpsi);
+    depls = 0.5 * std::fabs(alams + alams * anpsi);   // Khurram: This looks 1/2 (tr(A)^2 - ( tr(A^2) ) ) 
 
     //***********************************
     // The following seems redundant but... this is how it goes in geoFLAC.

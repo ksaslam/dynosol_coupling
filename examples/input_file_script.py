@@ -112,7 +112,8 @@ for ii in range(len(x_rough)-1):
 
 
 #Write output
-f = open('coupling_input.poly','w')
+#f = open('coupling_input.poly','w')
+f = open('long_domain.poly','w')
 
 #need to write this part
 # npoints ndims 0 0
