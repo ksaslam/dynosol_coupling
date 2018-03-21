@@ -338,10 +338,13 @@ void update_velocity(const Variables& var, array_t& vel)
     const double* f = var.force->data();
     double* v = vel.data();
     #pragma omp parallel for default(none) \
-        shared(var, m, f, v)
+        shared(var, m, f, v, std::cerr)
     for (int i=0; i<var.nnode*NDIMS; ++i) {
         int n = i / NDIMS;
         v[i] += var.dt * f[i] / m[n];
+        // if(i < 11)
+        //   std::cerr << n <<" "<< f[n*NDIMS] <<" "<< f[n*NDIMS+1] << " "
+        //             << m[n] <<" "<< v[n*NDIMS] <<" "<< v[n*NDIMS+1] << std::endl;
     }
 }
 

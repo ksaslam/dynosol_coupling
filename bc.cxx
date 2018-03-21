@@ -80,6 +80,15 @@ double find_max_vbc(const BC &bc)
     if (bc.vbc_n3 % 2 == 1)
         max_vbc_val = std::max(max_vbc_val, std::fabs(bc.vbc_val_n3));
 
+    if (bc.vbc_z0 == 3)
+        max_vbc_val = std::max(max_vbc_val, std::fabs(bc.vbc_val_y0));
+    if (bc.vbc_z1 == 3)
+        max_vbc_val = std::max(max_vbc_val, std::fabs(bc.vbc_val_y1));
+
+    if( max_vbc_val == 0.0 ) {
+        std::cerr << "WARNING: max_vbc_val is ZERO! Something might have gone wrong... Double-check your problem setup" << std::endl;
+        std::cerr << "WARNING: For now, setting max_vbc_val to 3e-10 m/s (= 1 cm/yr)" << std::endl;
+    }
     return max_vbc_val;
 }
 
@@ -184,7 +193,7 @@ void apply_vbcs(const Param &param, const Variables &var, array_t &vel)
 
     // diverging x-boundary
     #pragma omp parallel for default(none) \
-        shared(bc, var, vel)
+        shared(bc, var, vel, std::cerr)
     for (int i=0; i<var.nnode; ++i) {
 
         // fast path: skip nodes not on boundary
